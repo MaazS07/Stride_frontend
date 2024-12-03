@@ -1,0 +1,28 @@
+# Node.js
+node_modules/
+.env
+vite-env.d.ts
+# npm logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build output
+build/
+
+# Dependency directories
+.pnp/
+.pnp.js
+
+# VSCode settings
+.vscode/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Vite build output
+.vite/
+dist/
