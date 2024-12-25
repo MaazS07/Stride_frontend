@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Assignment } from '../../types/assignment';
 import { assignmentService } from '../../services/assignmentService';
 import { FaCheckCircle, FaTimesCircle, FaSpinner } from 'react-icons/fa';
+import { toast } from "react-hot-toast";
+import OrderPartnerAssignment from '../orders/OrderPartnerAssignment';
+import AssignmentMetricsComponent from './AssignmentMetrics';
 
 const AssignmentList: React.FC = () => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -18,6 +21,30 @@ const AssignmentList: React.FC = () => {
   useEffect(() => {
     fetchAssignments();
   }, [JSON.stringify(filters)]);
+
+  const handleRunAssignment = async (orderId: string | { [key: string]: any }) => {
+    try {
+      setLoading(true);
+      // Extract string ID if orderId is an object
+      const orderIdString = typeof orderId === 'object' ? 
+        (orderId._id?.toString() || orderId.id?.toString() || '') : 
+        orderId.toString();
+        
+      const result = await assignmentService.runAssignment(orderIdString);
+      
+      if (result.success) {
+        fetchAssignments();
+        toast.success('Partner assigned successfully');
+      } else {
+        toast.error(result.error || 'No available partners in area');
+      }
+    } catch (error) {
+      console.error('Assignment error:', error);
+      toast.error('Failed to run assignment');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchAssignments = async () => {
     try {
@@ -41,58 +68,92 @@ const AssignmentList: React.FC = () => {
     }
   };
 
-  const safeExtractValue = (value: any): string => {
+  const safeExtractId = (value: string | { [key: string]: any } | null | undefined): string => {
     if (value === null || value === undefined) return 'N/A';
-    return typeof value === 'object' ? value._id || value.id || JSON.stringify(value) : String(value);
+    if (typeof value === 'object') {
+      return value._id?.toString() || 
+             value.id?.toString() || 
+             JSON.stringify(value);
+    }
+    return value.toString();
   };
 
-  const renderAssignmentStatus = (status: string) => {
+  const renderAssignmentStatus = (assignment: Assignment) => {
     const statusColors = {
       success: 'bg-green-100 text-green-800',
       failed: 'bg-red-100 text-red-800'
     };
+
     return (
-      <span className={`px-2 py-1 rounded text-xs ${statusColors[status as keyof typeof statusColors] || 'bg-gray-100'}`}>
-        {status === 'success' ? <FaCheckCircle className="inline mr-1" /> : <FaTimesCircle className="inline mr-1" />}
-        {safeExtractValue(status)}
-      </span>
+      <div className="space-y-1">
+        <span className={`px-2 py-1 rounded text-xs ${statusColors[assignment.status as keyof typeof statusColors] || 'bg-gray-100'}`}>
+          {assignment.status === 'success' ? (
+            <FaCheckCircle className="inline mr-1" />
+          ) : (
+            <FaTimesCircle className="inline mr-1" />
+          )}
+          {assignment.status}
+        </span>
+        {assignment.status === 'failed' && assignment.reason && (
+          <div className="text-xs text-red-600 mt-1">
+            Reason: {assignment.reason}
+          </div>
+        )}
+      </div>
     );
   };
 
   return (
     <div className="container mx-auto p-4 bg-white shadow-md rounded">
       <h2 className="text-2xl font-bold mb-4">Assignment List</h2>
-
-      {/* Loading and Error States */}
+      
+      <AssignmentMetricsComponent/>
+      <OrderPartnerAssignment />
       {loading && <div className="flex items-center"><FaSpinner className="animate-spin mr-2" /> Loading...</div>}
       {error && <div className="text-red-500">{error}</div>}
 
-      {/* Assignments Table */}
       {!loading && !error && (
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-gray-200">
-              <th className="p-2 border">Order ID</th>
-              <th className="p-2 border">Partner ID</th>
-              <th className="p-2 border">Created At</th>
-              <th className="p-2 border">Status</th>
-              <th className="p-2 border">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {assignments.map((assignment) => (
-              <tr key={assignment._id} className="hover:bg-gray-100">
-                <td className="p-2 border">{safeExtractValue(assignment.orderId)}</td>
-                <td className="p-2 border">{safeExtractValue(assignment.partnerId)}</td>
-                <td className="p-2 border">{assignment.createdAt ? new Date(assignment.createdAt).toLocaleString() : 'N/A'}</td>
-                <td className="p-2 border">{renderAssignmentStatus(assignment.status)}</td>
-                <td className="p-2 border">
-                  <button className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">Run</button>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="p-2 border">Actions</th>
+                <th className="p-2 border">Order ID</th>
+                <th className="p-2 border">Partner ID</th>
+                <th className="p-2 border">Created At</th>
+                <th className="p-2 border">Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {assignments.map((assignment) => (
+                <tr key={assignment._id} className="hover:bg-gray-100">
+                  <td className="p-2 border">
+                    <button
+                      onClick={() => handleRunAssignment(assignment.orderId)}
+                      disabled={loading || assignment.status === 'success'}
+                      className={`px-3 py-1 rounded ${
+                        assignment.status === 'success'
+                          ? 'bg-gray-300 cursor-not-allowed'
+                          : 'bg-blue-500 hover:bg-blue-600 text-white'
+                      }`}
+                    >
+                      {loading ? <FaSpinner className="animate-spin" /> : 'Run'}
+                    </button>
+                  </td>
+                  <td className="p-2 border">{safeExtractId(assignment.orderId)}</td>
+                  <td className="p-2 border">{safeExtractId(assignment.partnerId) || 'Not assigned'}</td>
+                  <td className="p-2 border">{safeExtractId(assignment.name) || 'Not assigned'}</td>
+
+
+                  {/* <td className="p-2 border">
+                    {assignment.createdAt ? new Date(assignment.).toLocaleString() : 'N/A'}
+                  </td> */}
+                  <td className="p-2 border">{renderAssignmentStatus(assignment)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

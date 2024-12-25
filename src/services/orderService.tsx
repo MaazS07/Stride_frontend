@@ -35,8 +35,13 @@ export const orderService = {
   },
 
   updateOrderStatus: async (orderId: string, status: string) => {
-    const response = await api.put(`/orders/${orderId}/status`, { status });
-    return response.data;
+    try {
+      const response = await api.put(`/orders/${orderId}/status`, { status });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to update order status:', error);
+      throw error;
+    }
   },
 
   assignOrder: async (orderId: string) => {
