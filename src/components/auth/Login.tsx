@@ -1,3 +1,4 @@
+// src/components/auth/Login.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaSignInAlt } from 'react-icons/fa';
@@ -13,27 +14,36 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError('');
+  setIsLoading(true);
 
-    try {
-      const response = isPartner 
-        ? await authService.loginPartner(email, password)
-        : await authService.login(email, password);
-      
-      login(response.user || response.partner);
-      navigate('/');
-    } catch (err) {
-      setError('Invalid credentials');
-    } finally {
-      setIsLoading(false);
+  try {
+    const response = isPartner 
+      ? await authService.loginPartner(email, password)
+      : await authService.login(email, password);
+    
+    // Store the token
+    if (response.token) {
+      localStorage.setItem('token', response.token);
     }
-  };
-
+    
+    login(response.user || response.partner);
+    
+    if (isPartner) {
+      navigate('/partner/dashboard');
+    } else {
+      navigate('/');
+    }
+  } catch (err) {
+    setError('Invalid credentials');
+  } finally {
+    setIsLoading(false);
+  }
+};
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r  py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-xl space-y-8">
         <div className="text-center">
           <h2 className="text-3xl font-extrabold text-gray-900">

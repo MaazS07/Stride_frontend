@@ -1,6 +1,7 @@
 import { api } from '../utils/api';
 import { Assignment,AssignmentMetrics } from '../types/assignment';
-
+import { Order } from '../types/order';
+import { IPartnerBase } from '../types/partner';
 export const assignmentService = {
   // Get assignment metrics
   getAssignmentMetrics: async () => {
@@ -97,5 +98,27 @@ export const assignmentService = {
       failedAssignments: number;
       averageResponseTime: number;
     };
-  }
-};
+  },
+
+  getPartnerOrders: async (partnerId: string) => {
+    try {
+      const response = await api.get(`/assignments/partner/${partnerId}/orders`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch partner orders:', error);
+      throw error;
+    }
+  },
+
+  updateOrderStatus: async (orderId: string, status: Order['status'], partnerId: string) => {
+    try {
+      const response = await api.put(`/assignments/order/${orderId}/status`, {
+        status,
+        partnerId
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to update order status:', error);
+      throw error;
+    }
+  }}
