@@ -63,7 +63,7 @@ const OrderPartnerAssignment = () => {
   const handleAssignPartner = async (partnerId: string) => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3000/api/orders/${selectedOrder}/assign`, {
+      const response = await fetch(`https://stride-backend5.onrender.com/api/orders/${selectedOrder}/assign`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({ partnerId })

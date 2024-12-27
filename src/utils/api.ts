@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 export const api = axios.create({
-  baseURL: 'http://localhost:3000/api',
+  baseURL: 'https://stride-backend5.onrender.com/api',
   headers: {
     'Content-Type': 'application/json',
   }
