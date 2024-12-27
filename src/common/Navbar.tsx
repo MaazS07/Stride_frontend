@@ -21,7 +21,9 @@ const Navbar: React.FC = () => {
 
   return (
     <nav className="bg-white shadow-md">
+       
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+       
         {!isPartnerDashboard && (
           <div className="flex items-center space-x-4">
             <Link
@@ -50,6 +52,7 @@ const Navbar: React.FC = () => {
             </Link>
           </div>
         )}
+        <h2 className='text-black italic text-center text-3xl font-bold '>Stride</h2>
         <div className={`flex items-center space-x-4 ${isPartnerDashboard ? 'ml-auto' : ''}`}>
           <span className="text-gray-600">{user?.email}</span>
           <button

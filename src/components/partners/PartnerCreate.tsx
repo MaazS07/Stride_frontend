@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaCheckCircle, FaExclamationTriangle, FaTimes, FaPlus, FaClock, FaMapMarkedAlt, FaUser, FaEnvelope, FaPhone, FaLock, FaSpinner } from 'react-icons/fa';
 import { IPartnerBase } from '../../types/partner';
 import { partnerService } from '../../services/partnerService';
+import emailjs from '@emailjs/browser';
+
+// Initialize EmailJS
+emailjs.init(import.meta.env.VITE_EMAILJS_PUBLIC_KEY); // Replace with your EmailJS public key
 
 const PartnerCreate = () => {
   const navigate = useNavigate();
@@ -35,7 +39,6 @@ const PartnerCreate = () => {
   ) => {
     const { name, value } = e.target;
     
-    // Handle nested fields like shift
     if (name.startsWith('shift.')) {
       const shiftField = name.split('.')[1];
       setFormData(prev => ({
@@ -46,7 +49,6 @@ const PartnerCreate = () => {
         }
       }));
     } 
-    // Handle nested metrics fields
     else if (name.startsWith('metrics.')) {
       const metricsField = name.split('.')[1];
       setFormData(prev => ({
@@ -57,7 +59,6 @@ const PartnerCreate = () => {
         }
       }));
     } 
-    // Handle other fields
     else {
       setFormData(prev => ({
         ...prev,
@@ -99,6 +100,30 @@ const PartnerCreate = () => {
     return true;
   };
 
+  const sendWelcomeEmail = async () => {
+    try {
+      const templateParams = {
+        to_name: formData.name,
+        to_email: formData.email,
+        password: formData.password,
+        areas: formData.areas.join(', '),
+        shift_start: formData.shift.start,
+        shift_end: formData.shift.end,
+        phone: formData.phone
+      };
+
+      await emailjs.send(
+        import.meta.env.VITE_EMAILJS_SERVICE_KEY, // Replace with your EmailJS service ID
+        import.meta.env.VITE_EMAILJS_TEMPLATE_KEY, // Replace with your EmailJS template ID
+        templateParams,
+      );
+
+      console.log('Welcome email sent successfully');
+    } catch (error) {
+      console.error('Error sending welcome email:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -108,15 +133,17 @@ const PartnerCreate = () => {
     setSuccess(false);
 
     try {
-      // Use the partnerService to create partner
+      // Create partner
       await partnerService.createPartner(formData);
+      
+      // Send welcome email
+      await sendWelcomeEmail();
 
       setSuccess(true);
       setTimeout(() => {
         navigate('/partners');
       }, 2000);
     } catch (err) {
-      // Improved error handling
       const errorMessage = err.response?.data?.error || 'Failed to create partner';
       setError(errorMessage);
       console.error('Partner creation error:', err);
